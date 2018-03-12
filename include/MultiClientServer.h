@@ -37,7 +37,7 @@ namespace mcs {
 	public:
 		/// Initialize server that allows multiple connection from different clients
 		/// \param _port: port to listen the connections
-		MultiClientServer(eSocketType _type, int _port);
+		MultiClientServer(int _port);
 
 		/// Write message
 		template<typename T_>
@@ -49,18 +49,25 @@ namespace mcs {
 		public:
 			SocketServer(int  _port);
 
+			// 666 coolify this
+			template<typename D_>
+			void writeOnClients(D_ &_buffer);
+
 			void writeOnClients(std::string &_buffer);
 
-			void stop();
+			void stop(){ mRun = false; }
 		private:
 			std::thread mListenThread;
 			bool mRun = false;
+			std::mutex mSafeGuard;
 
 			int mPort;
-			std::vector<boost::asio::ip::tcp::socket*> mTcpConnections;
-			std::vector<boost::asio::ip::udp::socket*> mUdpConnections;
-		
-			std::mutex mSafeGuard;
+
+			// 666 TODO: gather following variables with traits
+		 	std::vector<boost::asio::ip::tcp::socket*> mTcpConnections;
+			
+			std::vector<boost::asio::ip::udp::endpoint> mUdpConnections;
+			boost::asio::ip::udp::socket *mServerSocket;
 		};
 
 	private:

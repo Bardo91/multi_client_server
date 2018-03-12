@@ -21,13 +21,19 @@
 
 #include<iostream>
 #include <boost/asio.hpp>
+#include <boost/array.hpp>
 
 namespace mcs {
 	//-----------------------------------------------------------------------------------------------------------------
 	template<>
-	MultiClientServer<eSocketType::TCP>::MultiClientServer(eSocketType _type, int _port) {
+	MultiClientServer<eSocketType::TCP>::MultiClientServer(int _port) {
 		mSocketServer = new SocketServer<eSocketType::TCP>(_port);
-		
+	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	MultiClientServer<eSocketType::UDP>::MultiClientServer(int _port) {
+		mSocketServer = new SocketServer<eSocketType::UDP>(_port);
 	}
 
 	//-----------------------------------------------------------------------------------------------------------------
@@ -47,6 +53,10 @@ namespace mcs {
 	}
 
 
+	//-----------------------------------------------------------------------------------------------------------------
+	// PRIVATE CLASS
+	//-----------------------------------------------------------------------------------------------------------------
+	// TCP interface
 	//-----------------------------------------------------------------------------------------------------------------
 	template<>
 	template<>
@@ -75,12 +85,12 @@ namespace mcs {
 			}
 		});
 	}
-
 	//-----------------------------------------------------------------------------------------------------------------
 	template<>
 	template<>
-	void MultiClientServer<eSocketType::TCP>::SocketServer<eSocketType::TCP>::stop() {
-		mRun = false;
+	template<typename D_>
+	void MultiClientServer<eSocketType::TCP>::SocketServer<eSocketType::TCP>::writeOnClients(D_ &_buffer) {
+		assert(false);
 	}
 
 	//-----------------------------------------------------------------------------------------------------------------
@@ -101,4 +111,72 @@ namespace mcs {
 			mSafeGuard.unlock();
 		}
 	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+	// UDP interface
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	template<>
+	MultiClientServer<eSocketType::UDP>::SocketServer<eSocketType::UDP>::SocketServer(int _port) {
+		mPort = _port;
+		mRun = true;
+		std::cout << "Creating UDP server...";
+		mListenThread = std::thread([&]() {
+			try {
+				boost::asio::io_service io_service;
+				mServerSocket = new boost::asio::ip::udp::socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), _port));
+
+				std::cout << "awaiting for connetions." << std::endl;
+				while (mRun) {
+					boost::array<char, 1> recv_buf;
+					boost::asio::ip::udp::endpoint remote_endpoint;
+					boost::system::error_code error;
+					mServerSocket->receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
+
+					if (error && error != boost::asio::error::message_size)
+						throw boost::system::system_error(error);
+
+
+					mSafeGuard.lock();
+					mUdpConnections.push_back(remote_endpoint);
+					mSafeGuard.unlock();
+				}
+			}
+			catch (std::exception &e) {
+				std::cerr << e.what() << std::endl;
+			}
+		});
+	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	template<>
+	template<typename D_>
+	void MultiClientServer<eSocketType::UDP>::SocketServer<eSocketType::UDP>::writeOnClients(D_ &_buffer) {
+		try {
+			mSafeGuard.lock();
+			for (auto &con : mUdpConnections) {
+				boost::system::error_code error;
+				boost::system::error_code ignored_error;
+
+				boost::array<char, sizeof(D_)> send_buffer;
+				memcpy(&send_buffer[0], &_buffer, sizeof(D_));
+				mServerSocket->send_to(boost::asio::buffer(send_buffer), con, 0, ignored_error);
+			}
+			mSafeGuard.unlock();
+		}
+		catch (std::exception &e) {
+			std::cerr << e.what() << std::endl;
+			mSafeGuard.unlock();
+		}
+	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	template<>
+	void MultiClientServer<eSocketType::UDP>::SocketServer<eSocketType::UDP>::writeOnClients(std::string &_buffer) {
+		assert(false);
+	}
+
+	
 }

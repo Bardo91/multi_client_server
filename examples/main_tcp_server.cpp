@@ -25,7 +25,7 @@
 int main(int _argc, char** _argv) {
 
 
-	mcs::MultiClientServer<mcs::eSocketType::TCP> server(mcs::eSocketType::TCP, 9999);
+	mcs::MultiClientServer<mcs::eSocketType::TCP> server(9999);
 
 	for (;;) {
 		std::this_thread::sleep_for(std::chrono::seconds(2));

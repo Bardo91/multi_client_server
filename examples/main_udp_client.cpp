@@ -23,32 +23,39 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 
-using boost::asio::ip::tcp;
+struct MyData {
+	float foo;
+	float bar;
+};
 
-int main(int _argc, char** _argv) {
+
+using boost::asio::ip::udp;
+
+int main(int argc, char* argv[]) {
 	try {
 		boost::asio::io_service io_service;
 
-		boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 9999);
+		boost::asio::ip::udp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 9999);
 
-		tcp::socket socket(io_service);
-		socket.connect(endpoint);
+		udp::socket socket(io_service);
+		socket.open(udp::v4());
+
+		boost::array<char, 1> send_buf = { { 0 } };
+		socket.send_to(boost::asio::buffer(send_buf), endpoint);
 
 		for (;;) {
-			boost::array<char, 128> buf;
-			boost::system::error_code error;
+			boost::array<char, sizeof(MyData)> recv_buf;
+			udp::endpoint sender_endpoint;
+			size_t len = socket.receive_from(boost::asio::buffer(recv_buf), sender_endpoint);
 
-			size_t len = socket.read_some(boost::asio::buffer(buf), error);
+			MyData data;
+			memcpy(&data, &recv_buf[0], sizeof(MyData));
 
-			if (error == boost::asio::error::eof)
-				break; // Connection closed cleanly by peer.
-			else if (error)
-				throw boost::system::system_error(error); // Some other error.
-
-			std::cout.write(buf.data(), len);
+			std::cout.write(recv_buf.data(), len);
 		}
 	}
-	catch (std::exception& e) {
+	catch (std::exception& e)
+	{
 		std::cerr << e.what() << std::endl;
 	}
 

@@ -32,12 +32,12 @@ struct MyData {
 int main(int _argc, char** _argv) {
 
 
-	mcs::MultiClientServer server(mcs::MultiClientServer::eSocketType::UDP, 9999);
+	mcs::MultiClientServer<mcs::eSocketType::UDP> server(9999);
 
 	for (;;) {
 		std::this_thread::sleep_for(std::chrono::seconds(2));
 		
-		MyData data = { 1.1235, 8.13 };
+		MyData data = { 1.1235f, 8.13f };
 		server.writeOnClients<MyData>(data);
 	}
 }
