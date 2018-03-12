@@ -20,14 +20,24 @@
 //---------------------------------------------------------------------------------------------------------------------
 
 #include <MultiClientServer.h>
+#include <thread>
+#include <chrono>
 
-#include <iostream>
-#include <cassert>
-#include <string>
+struct MyData {
+	float foo;
+	float bar;
+};
 
-using boost::asio::ip::tcp;
 
-namespace mcs {
+int main(int _argc, char** _argv) {
 
-	
+
+	mcs::MultiClientServer server(mcs::MultiClientServer::eSocketType::UDP, 9999);
+
+	for (;;) {
+		std::this_thread::sleep_for(std::chrono::seconds(2));
+		
+		MyData data = { 1.1235, 8.13 };
+		server.writeOnClients<MyData>(data);
+	}
 }

@@ -20,14 +20,16 @@
 //---------------------------------------------------------------------------------------------------------------------
 
 #include <MultiClientServer.h>
+#include <thread>
+#include <chrono>
+int main(int _argc, char** _argv) {
 
-#include <iostream>
-#include <cassert>
-#include <string>
 
-using boost::asio::ip::tcp;
+	mcs::MultiClientServer<mcs::eSocketType::TCP> server(mcs::eSocketType::TCP, 9999);
 
-namespace mcs {
-
-	
+	for (;;) {
+		std::this_thread::sleep_for(std::chrono::seconds(2));
+		std::string msg = "She sell seashells by the sea shore\n";
+		server.writeOnClients(msg);
+	}
 }

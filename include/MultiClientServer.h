@@ -19,6 +19,9 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------
 
+#ifndef MCS_MULTICLIENTSERVER_H_
+#define MCS_MULTICLIENTSERVER_H_
+
 #include <functional>
 #include <thread>
 #include <mutex>
@@ -27,28 +30,24 @@
 
 
 namespace mcs {
+	enum class eSocketType { UDP, TCP };
+
+	template<eSocketType T_>
 	class MultiClientServer {
 	public:
-		enum eSocketType {UDP, TCP};
-
 		/// Initialize server that allows multiple connection from different clients
 		/// \param _port: port to listen the connections
 		MultiClientServer(eSocketType _type, int _port);
-
-		/// Add a custom handler
-		void addHandler(std::function<void(int)> &_handler);
-
-		/// Add a custom callback
-		void addCallback(std::function<void(int)> &_callback);
 
 		/// Write message
 		template<typename T_>
 		void writeOnClients(T_ &_data);
 
 	private:
-		class TcpSocketServer {
+		template<eSocketType T_>
+		class SocketServer {
 		public:
-			TcpSocketServer(int  _port);
+			SocketServer(int  _port);
 
 			void writeOnClients(std::string &_buffer);
 
@@ -57,14 +56,20 @@ namespace mcs {
 			std::thread mListenThread;
 			bool mRun = false;
 
-			//std::vector<boost::asio::ip::tcp::socket> mConnections;
+			int mPort;
+			std::vector<boost::asio::ip::tcp::socket*> mTcpConnections;
+			std::vector<boost::asio::ip::udp::socket*> mUdpConnections;
 		
 			std::mutex mSafeGuard;
 		};
 
 	private:
 		eSocketType mSocketType = eSocketType::TCP;
-		TcpSocketServer *mTcpServer;
+		SocketServer<T_> *mSocketServer;
 	};
 
 }
+
+#include <MultiClientServer.inl>
+
+#endif

@@ -29,7 +29,7 @@ GroupSources(src)
 #########################################
 ###### Loading 3rd party libraries.######
 #########################################
-
+ 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/" ${CMAKE_MODULE_PATH})
 
 find_package(catkin COMPONENTS roscpp)
@@ -82,5 +82,7 @@ macro(MCS_APP app_name main_file)
 	target_link_libraries(${app_name} LINK_PUBLIC ${catkin_LIBRARIES})
 endmacro()
 
-MCS_APP(example_server examples/main_server.cpp)
-MCS_APP(example_client examples/main_client.cpp)
+MCS_APP(example_tcp_server examples/main_tcp_server.cpp)
+MCS_APP(example_tcp_client examples/main_tcp_client.cpp)
+MCS_APP(example_udp_server examples/main_udp_server.cpp)
+MCS_APP(example_udp_client examples/main_udp_client.cpp)

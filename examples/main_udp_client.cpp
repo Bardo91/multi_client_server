@@ -19,17 +19,38 @@
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //---------------------------------------------------------------------------------------------------------------------
 
-#include <MultiClientServer.h>
-#include <thread>
-#include <chrono>
+#include <iostream>
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+
+using boost::asio::ip::tcp;
+
 int main(int _argc, char** _argv) {
+	try {
+		boost::asio::io_service io_service;
 
+		boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 9999);
 
-	mcs::MultiClientServer server(mcs::MultiClientServer::eSocketType::TCP, 9999);
+		tcp::socket socket(io_service);
+		socket.connect(endpoint);
 
-	for (;;) {
-		std::this_thread::sleep_for(std::chrono::seconds(2));
-		std::string msg = "She sell seashells by the sea shore";
-		server.writeOnClients(msg);
+		for (;;) {
+			boost::array<char, 128> buf;
+			boost::system::error_code error;
+
+			size_t len = socket.read_some(boost::asio::buffer(buf), error);
+
+			if (error == boost::asio::error::eof)
+				break; // Connection closed cleanly by peer.
+			else if (error)
+				throw boost::system::system_error(error); // Some other error.
+
+			std::cout.write(buf.data(), len);
+		}
 	}
+	catch (std::exception& e) {
+		std::cerr << e.what() << std::endl;
+	}
+
+	return 0;
 }
