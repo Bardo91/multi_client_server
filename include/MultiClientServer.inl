@@ -40,15 +40,14 @@ namespace mcs {
 	template<>
 	template<>
 	void MultiClientServer<eSocketType::TCP>::writeOnClients<std::string>(std::string &_data) {
-		assert(mSocketType == eSocketType::TCP);
 		mSocketServer->writeOnClients(_data);
 	}
 
 	//-----------------------------------------------------------------------------------------------------------------
 	template<>
 	template<typename T_>
-	void MultiClientServer<eSocketType::TCP>::writeOnClients(T_ &_data) {
-		assert(mSocketType == eSocketType::UDP);
+	void MultiClientServer<eSocketType::UDP>::writeOnClients(T_ &_data) {
+		mSocketServer->writeOnClients<T_>(_data);
 
 	}
 
@@ -124,7 +123,7 @@ namespace mcs {
 		mListenThread = std::thread([&]() {
 			try {
 				boost::asio::io_service io_service;
-				mServerSocket = new boost::asio::ip::udp::socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), _port));
+				mServerSocket = new boost::asio::ip::udp::socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), mPort));
 
 				std::cout << "awaiting for connetions." << std::endl;
 				while (mRun) {
@@ -132,6 +131,7 @@ namespace mcs {
 					boost::asio::ip::udp::endpoint remote_endpoint;
 					boost::system::error_code error;
 					mServerSocket->receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
+					std::cout << "Received new connection from " << remote_endpoint.address().to_string() << std::endl;
 
 					if (error && error != boost::asio::error::message_size)
 						throw boost::system::system_error(error);

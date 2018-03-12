@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 			MyData data;
 			memcpy(&data, &recv_buf[0], sizeof(MyData));
 
-			std::cout.write(recv_buf.data(), len);
+			std::cout << "foo: " << data.foo << ", bar: " << data.bar << std::endl;
 		}
 	}
 	catch (std::exception& e)
