@@ -128,18 +128,28 @@ namespace mcs {
 				std::cout << "awaiting for connetions." << std::endl;
 				while (mRun) {
 					boost::array<char, 1> recv_buf;
-					boost::asio::ip::udp::endpoint remote_endpoint;
+					boost::asio::ip::udp::endpoint *remote_endpoint = new boost::asio::ip::udp::endpoint();
 					boost::system::error_code error;
-					mServerSocket->receive_from(boost::asio::buffer(recv_buf), remote_endpoint, 0, error);
-					std::cout << "Received new connection from " << remote_endpoint.address().to_string() << std::endl;
+					mServerSocket->receive_from(boost::asio::buffer(recv_buf), *remote_endpoint, 0, error);
 
-					if (error && error != boost::asio::error::message_size)
-						throw boost::system::system_error(error);
-
-
-					mSafeGuard.lock();
-					mUdpConnections.push_back(remote_endpoint);
-					mSafeGuard.unlock();
+					if (error && error != boost::asio::error::message_size) {
+						for (auto it = mUdpConnections.begin(); it != mUdpConnections.end();) {
+							if (*(*it) == *remote_endpoint) {
+								std::cout << "Connection from " << remote_endpoint->address() << " has droped" << std::endl;
+								mSafeGuard.lock();
+								it = mUdpConnections.erase(it);
+								mSafeGuard.unlock();
+							}else{
+								it++;
+							}
+						}
+					}
+					else {
+						std::cout << "Received new connection from " << remote_endpoint->address().to_string() << std::endl;
+						mSafeGuard.lock();
+						mUdpConnections.push_back(remote_endpoint);
+						mSafeGuard.unlock();
+					}
 				}
 			}
 			catch (std::exception &e) {
@@ -153,22 +163,24 @@ namespace mcs {
 	template<>
 	template<typename D_>
 	void MultiClientServer<eSocketType::UDP>::SocketServer<eSocketType::UDP>::writeOnClients(D_ &_buffer) {
-		try {
-			mSafeGuard.lock();
-			for (auto &con : mUdpConnections) {
-				boost::system::error_code error;
-				boost::system::error_code ignored_error;
+		
+		mSafeGuard.lock();
+		for (auto &con : mUdpConnections) {
+			boost::system::error_code error;
+			boost::system::error_code ignored_error;
 
-				boost::array<char, sizeof(D_)> send_buffer;
-				memcpy(&send_buffer[0], &_buffer, sizeof(D_));
-				mServerSocket->send_to(boost::asio::buffer(send_buffer), con, 0, ignored_error);
+			boost::array<char, sizeof(D_)> send_buffer;
+			memcpy(&send_buffer[0], &_buffer, sizeof(D_));
+			try {
+				mServerSocket->send_to(boost::asio::buffer(send_buffer), *con, 0, ignored_error);
 			}
-			mSafeGuard.unlock();
+			catch (std::exception &e) {
+				std::cerr << e.what() << std::endl;
+			}
 		}
-		catch (std::exception &e) {
-			std::cerr << e.what() << std::endl;
-			mSafeGuard.unlock();
-		}
+		mSafeGuard.unlock();
+		
+		
 	}
 
 	//-----------------------------------------------------------------------------------------------------------------

@@ -66,7 +66,7 @@ namespace mcs {
 			// 666 TODO: gather following variables with traits
 		 	std::vector<boost::asio::ip::tcp::socket*> mTcpConnections;
 			
-			std::vector<boost::asio::ip::udp::endpoint> mUdpConnections;
+			std::vector<boost::asio::ip::udp::endpoint*> mUdpConnections;
 			boost::asio::ip::udp::socket *mServerSocket;
 		};
 
