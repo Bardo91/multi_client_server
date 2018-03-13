@@ -25,34 +25,6 @@
 
 namespace mcs {
 	//-----------------------------------------------------------------------------------------------------------------
-	template<>
-	MultiClientServer<eSocketType::TCP>::MultiClientServer(int _port) {
-		mSocketServer = new SocketServer<eSocketType::TCP>(_port);
-	}
-
-	//-----------------------------------------------------------------------------------------------------------------
-	template<>
-	MultiClientServer<eSocketType::UDP>::MultiClientServer(int _port) {
-		mSocketServer = new SocketServer<eSocketType::UDP>(_port);
-	}
-
-	//-----------------------------------------------------------------------------------------------------------------
-	template<>
-	template<>
-	void MultiClientServer<eSocketType::TCP>::writeOnClients<std::string>(std::string &_data) {
-		mSocketServer->writeOnClients(_data);
-	}
-
-	//-----------------------------------------------------------------------------------------------------------------
-	template<>
-	template<typename T_>
-	void MultiClientServer<eSocketType::UDP>::writeOnClients(T_ &_data) {
-		mSocketServer->writeOnClients<T_>(_data);
-
-	}
-
-
-	//-----------------------------------------------------------------------------------------------------------------
 	// PRIVATE CLASS
 	//-----------------------------------------------------------------------------------------------------------------
 	// TCP interface
@@ -87,8 +59,8 @@ namespace mcs {
 	//-----------------------------------------------------------------------------------------------------------------
 	template<>
 	template<>
-	template<typename D_>
-	void MultiClientServer<eSocketType::TCP>::SocketServer<eSocketType::TCP>::writeOnClients(D_ &_buffer) {
+	template<typename DataTypeInner_>
+	void MultiClientServer<eSocketType::TCP>::SocketServer<eSocketType::TCP>::writeOnClients(DataTypeInner_ &_buffer) {
 		assert(false);
 	}
 
@@ -161,16 +133,16 @@ namespace mcs {
 	//-----------------------------------------------------------------------------------------------------------------
 	template<>
 	template<>
-	template<typename D_>
-	void MultiClientServer<eSocketType::UDP>::SocketServer<eSocketType::UDP>::writeOnClients(D_ &_buffer) {
+	template<typename DataTypeInner_>
+	void MultiClientServer<eSocketType::UDP>::SocketServer<eSocketType::UDP>::writeOnClients(DataTypeInner_ &_buffer) {
 		
 		mSafeGuard.lock();
 		for (auto &con : mUdpConnections) {
 			boost::system::error_code error;
 			boost::system::error_code ignored_error;
 
-			boost::array<char, sizeof(D_)> send_buffer;
-			memcpy(&send_buffer[0], &_buffer, sizeof(D_));
+			boost::array<char, sizeof(DataTypeInner_)> send_buffer;
+			memcpy(&send_buffer[0], &_buffer, sizeof(DataTypeInner_));
 			try {
 				mServerSocket->send_to(boost::asio::buffer(send_buffer), *con, 0, ignored_error);
 			}
@@ -190,5 +162,31 @@ namespace mcs {
 		assert(false);
 	}
 
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	MultiClientServer<eSocketType::TCP>::MultiClientServer(int _port) {
+		mSocketServer = new SocketServer<eSocketType::TCP>(_port);
+	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	MultiClientServer<eSocketType::UDP>::MultiClientServer(int _port) {
+		mSocketServer = new SocketServer<eSocketType::UDP>(_port);
+	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	template<>
+	void MultiClientServer<eSocketType::TCP>::writeOnClients<std::string>(std::string &_data) {
+		mSocketServer->writeOnClients(_data);
+	}
+
+	//-----------------------------------------------------------------------------------------------------------------
+	template<>
+	template<typename DataType_>
+	void MultiClientServer<eSocketType::UDP>::writeOnClients(DataType_ &_data) {
+		mSocketServer->writeOnClients<DataType_>(_data);
+
+	}
 	
 }

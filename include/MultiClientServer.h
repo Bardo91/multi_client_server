@@ -32,7 +32,7 @@
 namespace mcs {
 	enum class eSocketType { UDP, TCP };
 
-	template<eSocketType T_>
+	template<eSocketType SocketType_>
 	class MultiClientServer {
 	public:
 		/// Initialize server that allows multiple connection from different clients
@@ -40,18 +40,18 @@ namespace mcs {
 		MultiClientServer(int _port);
 
 		/// Write message
-		template<typename T_>
-		void writeOnClients(T_ &_data);
+		template<typename DataType_>
+		void writeOnClients(DataType_ &_data);
 
 	private:
-		template<eSocketType T_>
+		template<eSocketType SocketTypeInner_>
 		class SocketServer {
 		public:
 			SocketServer(int  _port);
 
 			// 666 coolify this
-			template<typename D_>
-			void writeOnClients(D_ &_buffer);
+			template<typename DataTypeInner_>
+			void writeOnClients(DataTypeInner_ &_buffer);
 
 			void writeOnClients(std::string &_buffer);
 
@@ -72,7 +72,7 @@ namespace mcs {
 
 	private:
 		eSocketType mSocketType = eSocketType::TCP;
-		SocketServer<T_> *mSocketServer;
+		SocketServer<SocketType_> *mSocketServer;
 	};
 
 }
